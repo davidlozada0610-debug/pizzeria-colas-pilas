@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using laboratoriPizzeriaExpress;
 
 namespace laboratoriPizzeriaCampusExpress
 {
@@ -13,6 +14,7 @@ namespace laboratoriPizzeriaCampusExpress
     {
         // Colecciones principales: FIFO para pedidos, LIFO para bitácora
         private Queue<string> colaPedidos = new Queue<string>();
+        private Queue<string> colaPedidosVIP = new Queue<string>();
         private Stack<string> pilaBitacora = new Stack<string>();
 
         public MainForm()
@@ -105,6 +107,7 @@ namespace laboratoriPizzeriaCampusExpress
         private void BtnLimpiar_Click(object sender, EventArgs e)
         {
             colaPedidos.Clear();
+            colaPedidosVIP.Clear();
             pilaBitacora.Clear();
             lblEstado.Text = string.Format("🧹 Sistema reiniciado.");
             ActualizarUI();
@@ -132,6 +135,71 @@ namespace laboratoriPizzeriaCampusExpress
             // Actualizar contador
             lblContador.Text = string.Format("Pedidos: {0} | Bitácora: {1}",
                 colaPedidos.Count, pilaBitacora.Count);
+        }
+        
+        void BtnAgregarVIPClick(object sender, EventArgs e)
+        {
+        	string clienteVIP = txtCliente.Text.Trim();
+
+            // Validar entrada
+            if (clienteVIP == "")
+            {
+                lblEstado.Text = string.Format("⚠️ Debe ingresar un nombre de cliente.");
+                return;
+            }
+
+            // Agregar a la cola
+            colaPedidosVIP.Enqueue(clienteVIP);
+
+            // Registrar en la pila
+            pilaBitacora.Push(string.Format("PEDIDOVIP: {0}", clienteVIP));
+
+            // Limpiar campo y actualizar
+            txtCliente.Clear();
+            lblEstado.Text = string.Format("✅ Pedido registrado para {0}", clienteVIP);
+            ActualizarUI();
+        }
+        
+        
+        
+        void BtnDeshacerVIPClick(object sender, EventArgs e)
+        {
+         if (pilaBitacora.Count == 0)
+            {
+                lblEstado.Text = string.Format("📭 No hay acciones para deshacer.");
+                return;
+            }
+
+            string ultimaAccion = pilaBitacora.Pop();
+
+            if (ultimaAccion.StartsWith("PEDIDOVIP:"))
+            {
+                // Extraer nombre del cliente
+                string nombre = ultimaAccion.Replace("PEDIDOVIP: ", "").Trim();
+                // Reconstruir cola excluyendo ese pedido
+                string[] temporal = colaPedidos.ToArray();
+                colaPedidos.Clear();
+                foreach (string p in temporal)
+                {
+                    if (p != nombre)
+                        colaPedidos.Enqueue(p);
+                }
+                lblEstado.Text = string.Format("↩️ Se deshizo el pedido de {0}", nombre);
+            }
+            else if (ultimaAccion.StartsWith("ENTREGADO:"))
+            {
+                // Extraer nombre del cliente
+                string nombre = ultimaAccion.Replace("ENTREGADO: ", "").Trim();
+                // Volver a encolar
+                colaPedidos.Enqueue(nombre);
+                lblEstado.Text = string.Format("↩️ Se deshizo la entrega a {0}", nombre);
+            }
+            else
+            {
+                lblEstado.Text = string.Format("⚠️ Acción desconocida en bitácora.");
+            }
+
+            ActualizarUI();	
         }
     }
 }
